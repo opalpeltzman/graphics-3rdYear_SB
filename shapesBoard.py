@@ -10,16 +10,31 @@ The App class
 class myWindowApp():
 
     def __init__(self):
-        self.color = "pink"
         self.window = 0
         self.canvas = 0
         self.tollbar = 0
         self.shapeChosen = 0
         self.click_number = 0
-        self.initWindow()
+        self.messages = 0
+
+        self.line_points = {'start': (0, 0), 'end': (0, 0)}
+        self.circle_points = {'center': (0, 0), 'perimeter': (0, 0)}
+        self.curve_points = {'p1': (0, 0), 'p2': (0, 0), 'p3': (0, 0), 'p4': (0, 0)}
+
+        # parameters for curve drawing
+        self.number_lines_for_curve = 10
+        self.lines_label = 0
+        self.scale = 0
+
+        # colors
+        # default color for pixel
+        self.color = "pink"
         # Combobox, allowing the user to chose colors
         self.cb = 0
-        self.scale = 0
+
+        # start function
+        self.initWindow()
+
 
     """
         set_color(self, event):
@@ -30,12 +45,22 @@ class myWindowApp():
         print("color", self.color)
 
     """
+        destroy_curve_widget(self):
+        deletes all widgets relevant to curve drawing.
+            """
+    def destroy_curve_widget(self):
+        for widget in self.tollbar.winfo_children():
+            if widget == self.lines_label or widget == self.scale:
+                widget.destroy()
+
+    """
        clean_canvas(self):
        deletes all drawing from canvas.
             """
     def clean_canvas(self):
         self.canvas.delete("all")
         print("clean canvas")
+        self.messages.config(text="All clean! Let's start again")
 
     """
         putpixel(self, X1, Y1, color): 
@@ -52,6 +77,8 @@ class myWindowApp():
             """
     def handle_canvas_line(self):
         print("drawing a Line")
+        self.destroy_curve_widget()
+        self.messages.config(text='Drawing a Line! Please click for a start and end point')
         self.canvas.bind('<Button-1>', self.handle_line_inputs)
 
     """
@@ -60,17 +87,15 @@ class myWindowApp():
       to draw_line(self, point_start, point_end) function.
            """
     def handle_line_inputs(self, event):
-        global x1, y1
         if self.click_number == 0:
-            x1 = event.x
-            y1 = event.y
+            self.line_points['start'] = (event.x, event.y)
             self.click_number = 1
 
         else:
-            x2 = event.x
-            y2 = event.y
 
-            self.draw_line((x1, y1), (x2, y2))
+            self.line_points['end'] = (event.x, event.y)
+            self.draw_line(self.line_points['start'][0], self.line_points['start'][1],
+                           self.line_points['end'][0], self.line_points['end'][1])
             self.click_number = 0
 
     """
@@ -78,8 +103,8 @@ class myWindowApp():
         end points the user choose.
         Based on DDA algorithm
             """
-    def draw_line(self, point_start, point_end):
-        self.canvas.create_line(point_start[0], point_start[1], point_end[0], point_end[1], fill=self.color, width=5)
+    def draw_line(self, x1, y1, x2, y2):
+        self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=5)
 
     """
         handle_canvas_circle(self):
@@ -89,6 +114,8 @@ class myWindowApp():
             """
     def handle_canvas_circle(self):
         print("drawing a Circle")
+        self.destroy_curve_widget()
+        self.messages.config(text="Drawing a Circle! Please click for a center point and then perimeter point")
         # self.canvas.bind('<Button-1>', self.handle_line_inputs)
 
     """
@@ -99,10 +126,19 @@ class myWindowApp():
             """
     def handle_canvas_curve(self):
         print("drawing a Curve")
+        self.destroy_curve_widget()
+        self.messages.config(text="Drawing a Curve! Please choose no. of lines and click for 4 different points")
 
-        self.scale = Scale(self.tollbar, label='no. of lines', from_=10, to=50, orient=HORIZONTAL, showvalue=0, tickinterval=10)
+        self.scale = Scale(self.tollbar, label='no. of lines', from_=10, to=50, orient=HORIZONTAL, showvalue=0, tickinterval=10, command=self.numberOfLines)
         self.scale.pack(side=LEFT, padx=5, pady=2)
+
+        self.lines_label = Label(self.tollbar, bg='white', width=10, text=self.number_lines_for_curve)
+        self.lines_label.pack(side=LEFT, padx=5, pady=2)
         # self.canvas.bind('<Button-1>', self.handle_line_inputs)
+
+    def numberOfLines(self, number):
+        self.number_lines_for_curve = number
+        self.lines_label.config(text='no.   ' + self.number_lines_for_curve)
 
     """
         initWindow(): creates the application that allow user to draw 
@@ -111,9 +147,9 @@ class myWindowApp():
             """
     def initWindow(self):
         self.window = Tk()
-        # Title bar Title
+        # Set bar Title
         self.window.title('SHAPES')
-        # Set fixed price to window
+        # Set fixed dimensions to window
         self.window.geometry("800x500")
         # Create toolbar menu
         self.tollbar = Frame(self.window)
@@ -153,7 +189,7 @@ class myWindowApp():
         )
         drawCurve.pack(side=LEFT, padx=2, pady=2)
 
-        # clean canvas
+        # clean canvas button
         cleanCanvas = Button(
             self.tollbar,
             relief=FLAT,
@@ -165,14 +201,17 @@ class myWindowApp():
         cleanCanvas.pack(side=LEFT, padx=2, pady=2)
 
         # Adding color option
-        data = ("pink", "black", "orange", "blue", "yellow")
+        data = ("pink", "black", "orange", "blue", "yellow", "green", "red", "magenta", "cyan", "grey")
         self.cb = Combobox(self.tollbar, values=data)
         self.cb.current(0)
         self.cb.pack(side=LEFT, padx=2, pady=2)
         self.cb.bind("<<ComboboxSelected>>", self.set_color)
 
+        self.messages = Label(self.window, bg='pink', text=" Enjoy your drawing! Please choose you're shape ", anchor='w')
+        self.messages.pack(fill=X, padx=2, pady=2)
+
         # Adding canvas to the window
-        self.canvas = Canvas(self.window, width=400, height=400, background='white')
+        self.canvas = Canvas(self.window, width=400, height=420, background='white')
         self.canvas.pack(fill=X)
 
         # window.mainloop(), enables Tkinter listen to events in the window
@@ -184,7 +223,6 @@ run app
 """
 def main():
     myWindowApp()
-
 
 
 if __name__ == '__main__':
