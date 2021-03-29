@@ -12,6 +12,7 @@ class myWindowApp():
     def __init__(self):
         self.window = 0
         self.canvas = 0
+        self.img = 0
         self.tollbar = 0
         self.shapeChosen = 0
         self.click_number = 0
@@ -27,14 +28,15 @@ class myWindowApp():
         self.scale = 0
 
         # colors
-        # default color for pixel
-        self.color = "pink"
+        # default color for pixel (pink in hex)
+        self.color = "#ffa4a9"
+        self.colors_dictionary = {"pink": "#ffa4a9", "black": "#041412", "orange": "#ff991a", "blue": "#1a35ff",
+        "yellow": "#ffff00", "green": "#009b3b", "red": "#ff311a", "magenta": "#ff00ff", "cyan": "#00ffff", "grey": "#a6aea9"}
         # Combobox, allowing the user to chose colors
         self.cb = 0
 
         # start function
         self.initWindow()
-
 
     """
         set_color(self, event):
@@ -43,6 +45,8 @@ class myWindowApp():
     def set_color(self, event):
         self.color = self.cb.get()
         print("color", self.color)
+        self.color = self.colors_dictionary[self.color]
+        print("color in hex", self.color)
 
     """
         destroy_curve_widget(self):
@@ -61,13 +65,26 @@ class myWindowApp():
         self.canvas.delete("all")
         print("clean canvas")
         self.messages.config(text="All clean! Let's start again")
+        # Adding img
+        self.img = PhotoImage(width=800, height=420)
+        self.canvas.create_image((0, 0), image=self.img, anchor="nw")
 
     """
-        putpixel(self, X1, Y1, color): 
+        putpixel(self, X, Y, color): 
         turn on a single pixel in the active window.
             """
-    def putpixel(self, X1, Y1, color):
-        pass
+    def putpixel(self, X, Y, color):
+        self.img.put(color, (X, Y))
+
+    """
+        absolute_value(self, value):
+        returns the absolute value.
+            """
+    def absolute_value(self, value):
+        val = value
+        if value < 0:
+            val = value * -1
+        return val
 
     """
        handle_canvas_line(self): 
@@ -83,7 +100,7 @@ class myWindowApp():
 
     """
       handle_line_inputs(self, event):
-      handles the mouse inputs and send start and end's line point
+      handles the mouse inputs and send start and end's line points
       to draw_line(self, point_start, point_end) function.
            """
     def handle_line_inputs(self, event):
@@ -99,12 +116,46 @@ class myWindowApp():
             self.click_number = 0
 
     """
-        draw_line(self, point_start, point_end): create a line based on start and 
+        draw_line(self, point_start, point_end): 
+        create a line based on start and 
         end points the user choose.
-        Based on DDA algorithm
+        Based on Bresenham algorithm
             """
     def draw_line(self, x1, y1, x2, y2):
-        self.canvas.create_line(x1, y1, x2, y2, fill=self.color, width=5)
+        start_points = [x1, y1]
+        end_points = [x2, y2]
+
+        dX = end_points[0] - start_points[0]
+        dY = end_points[1] - start_points[1]
+
+        step = self.absolute_value(dY) > self.absolute_value(dX)
+
+        if step:
+            start_points[0], start_points[1] = start_points[1], start_points[0]
+            end_points[0], end_points[1] = end_points[1], end_points[0]
+
+        if start_points[0] > end_points[0]:
+            start_points[0], end_points[0] = end_points[0], start_points[0]
+            start_points[1], end_points[1] = end_points[1], start_points[1]
+
+        dX = end_points[0] - start_points[0]
+        dY = end_points[1] - start_points[1]
+
+        error = (2 * dY) - dX
+        ystep = -1
+        y = start_points[1]
+        if start_points[1] < end_points[1]:
+            ystep = 1
+
+        for x in range(start_points[0], end_points[0] + 1):
+            if step:
+                self.putpixel(y, x, self.color)
+            else:
+                self.putpixel(x, y, self.color)
+            error += 2 * dY
+            if error >= 0:
+                y += ystep
+                error -= 2 * dX
 
     """
         handle_canvas_circle(self):
@@ -116,8 +167,34 @@ class myWindowApp():
         print("drawing a Circle")
         self.destroy_curve_widget()
         self.messages.config(text="Drawing a Circle! Please click for a center point and then perimeter point")
-        # self.canvas.bind('<Button-1>', self.handle_line_inputs)
+        self.canvas.bind('<Button-1>', self.handle_circle_inputs)
 
+    """
+       handle_circle_inputs(self, event):
+       handles the mouse inputs and send center and perimeter's circle points
+       to draw_circle(self, center_point, perimeter_point) function.
+            """
+    def handle_circle_inputs(self, event):
+        if self.click_number == 0:
+            self.circle_points['center'] = (event.x, event.y)
+            self.click_number = 1
+
+        else:
+
+            self.circle_points['perimeter'] = (event.x, event.y)
+            self.draw_circle(self.circle_points['center'][0], self.circle_points['center'][1],
+                           self.circle_points['perimeter'][0], self.circle_points['perimeter'][1])
+            self.click_number = 0
+
+    """
+       draw_circle(self, x1, y1, x2, y2): 
+       create a circle based on center and 
+       perimeter points the user choose.
+       Based on Closed Corners Bresenham circle algorithm
+            """
+
+    def draw_circle(self, x1, y1, x2, y2):
+        pass
     """
         handle_canvas_curve(self):
         handles toolbar curve button click,
@@ -213,6 +290,9 @@ class myWindowApp():
         # Adding canvas to the window
         self.canvas = Canvas(self.window, width=400, height=420, background='white')
         self.canvas.pack(fill=X)
+        # Adding img
+        self.img = PhotoImage(width=800, height=420)
+        self.canvas.create_image((0, 0), image=self.img, anchor="nw")
 
         # window.mainloop(), enables Tkinter listen to events in the window
         self.window.mainloop()
