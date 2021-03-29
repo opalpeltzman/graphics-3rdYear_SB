@@ -1,8 +1,10 @@
 """
 Author: Opal Peltzman 208521385
 """
+from math import sqrt
 from tkinter import *
 from tkinter.ttk import Combobox
+
 
 """
 The App class
@@ -122,6 +124,8 @@ class myWindowApp():
         Based on Bresenham algorithm
             """
     def draw_line(self, x1, y1, x2, y2):
+        if((self.absolute_value(x1-x2)>= self.absolute_value(y1-y2) and x2 < x1) or ((self.absolute_value(y1-y2)> self.absolute_value(x1-x2)) and y2 <y1)):
+            x1,y1,x2,y2,x2,y2,x1,y1
         start_points = [x1, y1]
         end_points = [x2, y2]
 
@@ -187,14 +191,39 @@ class myWindowApp():
             self.click_number = 0
 
     """
+       circle_pixel(self, x_center, y_center, x_r, y_r):
+       draw all 8 pixels.
+            """
+    def circle_pixel(self, x_center, y_center, x_r, y_r):
+        self.putpixel(x_center + x_r, y_center + y_r, self.color)
+        self.putpixel(x_center - x_r, y_center + y_r, self.color)
+        self.putpixel(x_center + x_r, y_center - y_r, self.color)
+        self.putpixel(x_center - x_r, y_center - y_r, self.color)
+        self.putpixel(x_center + y_r, y_center + x_r, self.color)
+        self.putpixel(x_center - y_r, y_center + x_r, self.color)
+        self.putpixel(x_center + y_r, y_center - x_r, self.color)
+        self.putpixel(x_center - y_r, y_center - x_r, self.color)
+
+    """
        draw_circle(self, x1, y1, x2, y2): 
        create a circle based on center and 
        perimeter points the user choose.
        Based on Closed Corners Bresenham circle algorithm
             """
-
     def draw_circle(self, x1, y1, x2, y2):
-        pass
+        x = 0
+        # find the circle radius with pythagoras
+        y = int(sqrt((x2 - x1)**2 + (y2 - y1)**2))
+        p = 3 - 2*y
+        self.circle_pixel(x1, y1, x, y)
+        while(y >= x):
+            x+= 1
+            if(p >= 0):
+                y-= 1
+                p = p + 4 * (x - y) + 10
+            else:
+                p = p + 4*x + 6
+            self.circle_pixel(x1, y1, x, y)
     """
         handle_canvas_curve(self):
         handles toolbar curve button click,
