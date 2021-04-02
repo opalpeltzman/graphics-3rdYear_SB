@@ -4,6 +4,7 @@ Author: Opal Peltzman 208521385
 from math import sqrt
 from tkinter import *
 from tkinter.ttk import Combobox
+import numpy as np
 
 
 """
@@ -95,7 +96,6 @@ class myWindowApp():
        handle_canvas_line(self): 
        handles toolbar line button click,
        and creates a canvas mouse event listening.
-       
             """
     def handle_canvas_line(self):
         print("drawing a Line")
@@ -123,11 +123,9 @@ class myWindowApp():
         draw_line(self, point_start, point_end): 
         create a line based on start and 
         end points the user choose.
-        Based on Bresenham algorithm
+        based on DDA algorithm
             """
     def draw_line(self, x1, y1, x2, y2):
-        print("start point", x1, y1)
-        print("end point", x2, y2)
         start_points = [x1, y1]
         end_points = [x2, y2]
 
@@ -138,8 +136,9 @@ class myWindowApp():
         dY = self.absolute_value(end_points[1] - start_points[1])
 
         max_range = max(dX, dY)
-        dX = dX / max_range
-        dY = dY / max_range
+        if max_range != 0:
+            dX = dX / max_range
+            dY = dY / max_range
 
         x = start_points[0]
         y = start_points[1]
@@ -160,7 +159,6 @@ class myWindowApp():
         handle_canvas_circle(self):
         handles toolbar circle button click,
         and creates a canvas mouse event listening.
-
             """
     def handle_canvas_circle(self):
         print("drawing a Circle")
@@ -171,7 +169,7 @@ class myWindowApp():
     """
        handle_circle_inputs(self, event):
        handles the mouse inputs and send center and perimeter's circle points
-       to draw_circle(self, center_point, perimeter_point) function.
+       to draw_circle(self, x1, y1, x2, y2) function.
             """
     def handle_circle_inputs(self, event):
         if self.click_number == 0:
@@ -179,7 +177,6 @@ class myWindowApp():
             self.click_number = 1
 
         else:
-
             self.circle_points['perimeter'] = (event.x, event.y)
             self.draw_circle(self.circle_points['center'][0], self.circle_points['center'][1],
                            self.circle_points['perimeter'][0], self.circle_points['perimeter'][1])
@@ -203,7 +200,7 @@ class myWindowApp():
        draw_circle(self, x1, y1, x2, y2): 
        create a circle based on center and 
        perimeter points the user choose.
-       Based on Closed Corners Bresenham circle algorithm
+       Based on Bresenham circle algorithm
             """
     def draw_circle(self, x1, y1, x2, y2):
         x = 0
@@ -212,21 +209,20 @@ class myWindowApp():
         p = 3 - 2*y
         self.circle_pixel(x1, y1, x, y)
         while(y >= x):
-            x+= 1
+            x += 1
             if(p >= 0):
-                y-= 1
+                y -= 1
                 p = p + 4 * (x - y) + 10
             else:
                 p = p + 4*x + 6
             self.circle_pixel(x1, y1, x, y)
+
     """
         handle_canvas_curve(self):
         handles toolbar curve button click,
         and creates a canvas mouse event listening.
-
             """
     def handle_canvas_curve(self):
-        print("drawing a Curve")
         self.destroy_curve_widget()
         self.messages.config(text="Drawing a Curve! Please choose no. of lines and click for 4 different points")
 
@@ -248,23 +244,20 @@ class myWindowApp():
 
     """
         handle_curve_inputs(self, event):
-        handles the mouse inputs and send center and perimeter's circle points
-        to draw_circle(self, center_point, perimeter_point) function.
+        handles the mouse inputs and send 4 points
+        to draw_curve(self, x1, y1, x2, y2, x3, y3, x4, y4, lines) function.
             """
     def handle_curve_inputs(self, event):
         if self.click_number == 0:
             self.curve_points['p1'] = (event.x, event.y)
-            print(event.x, event.y)
             self.click_number = 1
 
         elif self.click_number == 1:
             self.curve_points['p2'] = (event.x, event.y)
-            print(event.x, event.y)
             self.click_number = 2
 
         elif self.click_number == 2:
             self.curve_points['p3'] = (event.x, event.y)
-            print(event.x, event.y)
             self.click_number = 3
 
         elif self.click_number == 3:
@@ -272,23 +265,44 @@ class myWindowApp():
             self.draw_curve(self.curve_points['p1'][0], self.curve_points['p1'][1], self.curve_points['p2'][0],
                             self.curve_points['p2'][1], self.curve_points['p3'][0], self.curve_points['p3'][1],
                             self.curve_points['p4'][0], self.curve_points['p4'][1], self.number_lines_for_curve)
-            print(event.x, event.y)
-            self.click_number = 0
-        else:
-            self.curve_points['p1'] = (0, 0)
-            self.curve_points['p2'] = (0, 0)
-            self.curve_points['p3'] = (0, 0)
-            self.curve_points['p4'] = (0, 0)
             self.click_number = 0
 
     """
-        draw_curve(self, x1, y1, x2, y2, x3, y3, x4, y4):
+        draw_curve(self, x1, y1, x2, y2, x3, y3, x4, y4, lines):
         create a curve based on 4 points the user choose.
-        Based on Closed Corners Bresenham circle algorithm
+        Based on Bezier curves algorithm
             """
     def draw_curve(self, x1, y1, x2, y2, x3, y3, x4, y4, lines):
         print("draw curve with ", lines, " lines")
         print("points ", x1, y1, x2, y2, x3, y3, x4, y4)
+
+        # initialize parameters
+        t = accuracy = 1 / int(lines)
+        mb = [[-1, 3, -3, 1],
+              [3, -6, 3, 0],
+              [-3, 3, 0, 0],
+              [1, 0, 0, 0]]
+
+        x_vector = [[x1, x2, x3, x4]]
+        y_vector = [[y1, y2, y3, y4]]
+
+        previous_x = x1
+        previous_y = y1
+
+        self.putpixel(x1, y1, "black")
+        self.putpixel(x2, y2, "black")
+        self.putpixel(x3, y3, "black")
+        self.putpixel(x4, y4, "black")
+
+        while t <= 1:
+            t_vector = [(t ** 3), (t ** 2), t, 1]
+            x = int(np.dot(t_vector, np.dot(mb, np.transpose(x_vector))))
+            y = int(np.dot(t_vector, np.dot(mb, np.transpose(y_vector))))
+            self.draw_line(previous_x, previous_y, x, y)
+            previous_x = x
+            previous_y = y
+            t += accuracy
+        self.draw_line(previous_x, previous_y, x4, y4)
 
     """
         initWindow(): creates the application that allow user to draw 
