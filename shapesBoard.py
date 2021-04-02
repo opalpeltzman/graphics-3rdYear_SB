@@ -273,9 +273,6 @@ class myWindowApp():
         Based on Bezier curves algorithm
             """
     def draw_curve(self, x1, y1, x2, y2, x3, y3, x4, y4, lines):
-        print("draw curve with ", lines, " lines")
-        print("points ", x1, y1, x2, y2, x3, y3, x4, y4)
-
         # initialize parameters
         t = accuracy = 1 / int(lines)
         mb = [[-1, 3, -3, 1],
