@@ -68,15 +68,18 @@ class myWindowApp():
         print("clean canvas")
         self.messages.config(text="All clean! Let's start again")
         # Adding img
-        self.img = PhotoImage(width=800, height=420)
-        self.canvas.create_image((0, 0), image=self.img, anchor="nw")
+        self.img = PhotoImage(width=1000, height=500)
+        self.canvas.create_image((1000 // 2, 500 // 2), image=self.img, state="normal")
 
     """
         putpixel(self, X, Y, color): 
         turn on a single pixel in the active window.
             """
     def putpixel(self, X, Y, color):
-        self.img.put(color, (X, Y))
+        if X < 0 or Y < 0:
+            pass
+        else:
+            self.img.put(color, (X, Y))
 
     """
         absolute_value(self, value):
@@ -111,7 +114,6 @@ class myWindowApp():
             self.click_number = 1
 
         else:
-
             self.line_points['end'] = (event.x, event.y)
             self.draw_line(self.line_points['start'][0], self.line_points['start'][1],
                            self.line_points['end'][0], self.line_points['end'][1])
@@ -124,42 +126,35 @@ class myWindowApp():
         Based on Bresenham algorithm
             """
     def draw_line(self, x1, y1, x2, y2):
-        if((self.absolute_value(x1-x2)>= self.absolute_value(y1-y2) and x2 < x1) or ((self.absolute_value(y1-y2)> self.absolute_value(x1-x2)) and y2 <y1)):
-            x1,y1,x2,y2,x2,y2,x1,y1
+        print("start point", x1, y1)
+        print("end point", x2, y2)
         start_points = [x1, y1]
         end_points = [x2, y2]
 
-        dX = end_points[0] - start_points[0]
-        dY = end_points[1] - start_points[1]
+        if x1 > x2 and y1 > y2:
+            start_points, end_points = end_points, start_points
 
-        step = self.absolute_value(dY) > self.absolute_value(dX)
+        dX = self.absolute_value(end_points[0] - start_points[0])
+        dY = self.absolute_value(end_points[1] - start_points[1])
 
-        if step:
-            start_points[0], start_points[1] = start_points[1], start_points[0]
-            end_points[0], end_points[1] = end_points[1], end_points[0]
+        max_range = max(dX, dY)
+        dX = dX / max_range
+        dY = dY / max_range
 
-        if start_points[0] > end_points[0]:
-            start_points[0], end_points[0] = end_points[0], start_points[0]
-            start_points[1], end_points[1] = end_points[1], start_points[1]
-
-        dX = end_points[0] - start_points[0]
-        dY = end_points[1] - start_points[1]
-
-        error = (2 * dY) - dX
-        ystep = -1
+        x = start_points[0]
         y = start_points[1]
-        if start_points[1] < end_points[1]:
-            ystep = 1
 
-        for x in range(start_points[0], end_points[0] + 1):
-            if step:
-                self.putpixel(y, x, self.color)
+        for i in range(max_range):
+            self.putpixel(round(x), round(y), self.color)
+            if x1 < x2 and y1 > y2:
+                x += dX
+                y -= dY
+            elif x1 > x2 and y2 > y1:
+                x -= dX
+                y += dY
             else:
-                self.putpixel(x, y, self.color)
-            error += 2 * dY
-            if error >= 0:
-                y += ystep
-                error -= 2 * dX
+                x += dX
+                y += dY
 
     """
         handle_canvas_circle(self):
@@ -240,11 +235,60 @@ class myWindowApp():
 
         self.lines_label = Label(self.tollbar, bg='white', width=10, text=self.number_lines_for_curve)
         self.lines_label.pack(side=LEFT, padx=5, pady=2)
-        # self.canvas.bind('<Button-1>', self.handle_line_inputs)
+        self.canvas.bind('<Button-1>', self.handle_curve_inputs)
 
+    """
+        numberOfLines(self, number):
+        present to the user the number of lines he chose to draw
+        a curve.
+            """
     def numberOfLines(self, number):
         self.number_lines_for_curve = number
         self.lines_label.config(text='no.   ' + self.number_lines_for_curve)
+
+    """
+        handle_curve_inputs(self, event):
+        handles the mouse inputs and send center and perimeter's circle points
+        to draw_circle(self, center_point, perimeter_point) function.
+            """
+    def handle_curve_inputs(self, event):
+        if self.click_number == 0:
+            self.curve_points['p1'] = (event.x, event.y)
+            print(event.x, event.y)
+            self.click_number = 1
+
+        elif self.click_number == 1:
+            self.curve_points['p2'] = (event.x, event.y)
+            print(event.x, event.y)
+            self.click_number = 2
+
+        elif self.click_number == 2:
+            self.curve_points['p3'] = (event.x, event.y)
+            print(event.x, event.y)
+            self.click_number = 3
+
+        elif self.click_number == 3:
+            self.curve_points['p4'] = (event.x, event.y)
+            self.draw_curve(self.curve_points['p1'][0], self.curve_points['p1'][1], self.curve_points['p2'][0],
+                            self.curve_points['p2'][1], self.curve_points['p3'][0], self.curve_points['p3'][1],
+                            self.curve_points['p4'][0], self.curve_points['p4'][1], self.number_lines_for_curve)
+            print(event.x, event.y)
+            self.click_number = 0
+        else:
+            self.curve_points['p1'] = (0, 0)
+            self.curve_points['p2'] = (0, 0)
+            self.curve_points['p3'] = (0, 0)
+            self.curve_points['p4'] = (0, 0)
+            self.click_number = 0
+
+    """
+        draw_curve(self, x1, y1, x2, y2, x3, y3, x4, y4):
+        create a curve based on 4 points the user choose.
+        Based on Closed Corners Bresenham circle algorithm
+            """
+    def draw_curve(self, x1, y1, x2, y2, x3, y3, x4, y4, lines):
+        print("draw curve with ", lines, " lines")
+        print("points ", x1, y1, x2, y2, x3, y3, x4, y4)
 
     """
         initWindow(): creates the application that allow user to draw 
@@ -317,11 +361,11 @@ class myWindowApp():
         self.messages.pack(fill=X, padx=2, pady=2)
 
         # Adding canvas to the window
-        self.canvas = Canvas(self.window, width=400, height=420, background='white')
+        self.canvas = Canvas(self.window, width=1000, height=500, background='white')
         self.canvas.pack(fill=X)
         # Adding img
-        self.img = PhotoImage(width=800, height=420)
-        self.canvas.create_image((0, 0), image=self.img, anchor="nw")
+        self.img = PhotoImage(width=1000, height=500)
+        self.canvas.create_image((1000//2, 500//2), image=self.img, state="normal")
 
         # window.mainloop(), enables Tkinter listen to events in the window
         self.window.mainloop()
